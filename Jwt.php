@@ -16,6 +16,9 @@ use yii\base\Component;
 use yii\base\InvalidArgumentException;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Encoding\UnixTimestampDates;
+use Lcobucci\JWT\Validation\Constraint\IssuedBy;
+use Lcobucci\JWT\Validation\Constraint\RelatedTo;
+use Lcobucci\JWT\Validation\Validator;
 
 /**
  * JSON Web Token implementation, based on this library:
@@ -48,12 +51,6 @@ class Jwt extends Component
     public $key;
 
     /**
-     * @var string|array|callable \numelion\jwtJwtValidationData
-     * @see [[Yii::createObject()]]
-     */
-    public $jwtValidationData = JwtValidationData::class;
-
-    /**
      * @see [[Lcobucci\JWT\Builder::__construct()]]
      * @param Encoder|null $encoder
      * @param ClaimFactory|null $claimFactory
@@ -72,16 +69,7 @@ class Jwt extends Component
      */
     public function getParser(Decoder $decoder = null, ClaimFactory $claimFactory = null)
     {
-        return new Parser($decoder, $claimFactory);
-    }
-
-    /**
-     * @see [[Lcobucci\JWT\ValidationData::__construct()]]
-     * @return ValidationData
-     */
-    public function getValidationData()
-    {
-        return Yii::createObject($this->jwtValidationData)->getValidationData();
+        return new Parser($decoder ?? new JoseEncoder());
     }
 
     /**
@@ -135,10 +123,6 @@ class Jwt extends Component
             return null;
         }
 
-        if ($verify && !$this->verifyToken($token)) {
-            return null;
-        }
-
         return $token;
     }
 
@@ -150,30 +134,13 @@ class Jwt extends Component
      */
     public function validateToken(Token $token, $currentTime = null)
     {
-        $validationData = $this->getValidationData();
-        if ($currentTime !== null) {
-            $validationData->setCurrentTime($currentTime);
-        }
-        return $token->validate($validationData);
-    }
-
-    /**
-     * Validate token
-     * @param Token $token token object
-     * @return bool
-     * @throws \Throwable
-     */
-    public function verifyToken(Token $token)
-    {
-        $alg = $token->getHeader('alg');
-
-        if (empty($this->supportedAlgs[$alg])) {
-            throw new InvalidArgumentException('Algorithm not supported');
+        $parser = new Parser(new JoseEncoder());
+        $validator = new Validator();
+        $jwtParams = Yii::$app->params['jwt'] ?? [];
+        if (empty($jwtParams)) {
+            throw new InvalidArgumentException('JWT params not setted');
         }
 
-        /** @var Signer $signer */
-        $signer = Yii::createObject($this->supportedAlgs[$alg]);
-
-        return $token->verify($signer, $this->key);
+        return $validator->validate($token, new IssuedBy($jwtParams['issuer']));
     }
 }

@@ -6,8 +6,7 @@
 	"authors": [
         {
             "name": "numelion",
-            "email": "numelion@gmail.com",
-            "homepage": ""
+            "email": "numelion@gmail.com"
         }
     ],
     "license": "BSD-3-Clause",
@@ -34,5 +33,10 @@
             "type": "composer",
             "url": "https://asset-packagist.org"
         }
-    ]    
+    ],
+    "config": {
+        "allow-plugins": {
+            "yiisoft/yii2-composer": true
+        }
+    }
 }

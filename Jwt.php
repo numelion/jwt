@@ -2,18 +2,20 @@
 
 namespace numelion\jwt;
 
-use Lcobucci\JWT\Builder;
+use Lcobucci\JWT\Token\Builder;
+use Lcobucci\JWT\Token\Parser;
 use Lcobucci\JWT\Claim\Factory as ClaimFactory;
-use Lcobucci\JWT\Parser;
 use Lcobucci\JWT\Parsing\Decoder;
 use Lcobucci\JWT\Parsing\Encoder;
 use Lcobucci\JWT\Signer;
-use Lcobucci\JWT\Signer\Key;
+use Lcobucci\JWT\Signer\Key\InMemory as Key;
 use Lcobucci\JWT\Token;
 use Lcobucci\JWT\ValidationData;
 use Yii;
 use yii\base\Component;
 use yii\base\InvalidArgumentException;
+use Lcobucci\JWT\Encoding\JoseEncoder;
+use Lcobucci\JWT\Encoding\UnixTimestampDates;
 
 /**
  * JSON Web Token implementation, based on this library:
@@ -59,7 +61,7 @@ class Jwt extends Component
      */
     public function getBuilder(Encoder $encoder = null, ClaimFactory $claimFactory = null)
     {
-        return new Builder($encoder, $claimFactory);
+        return new Builder($encoder ?? new JoseEncoder(), $claimFactory ?? new UnixTimestampDates());
     }
 
     /**
@@ -98,7 +100,7 @@ class Jwt extends Component
      * @param string|null $passphrase
      * @return Key
      */
-    public function getKey($content = null, $passphrase = null)
+    public function getKey($content = '', $passphrase = '')
     {
         $content = $content ?: $this->key;
 
@@ -106,7 +108,7 @@ class Jwt extends Component
             return $content;
         }
 
-        return new Key($content, $passphrase);
+        return Key::plainText($content, $passphrase);
     }
 
     /**
